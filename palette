@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# This is the Palette script.
+# It provides a nice shortcut API for using the staffeli tool,
+# and it makes it easier to access and store information
+# about which students have submitted, and those who have not.
+
+# Usage:
+# 1) Make sure that you have Staffeli installed.
+# 2) Fetch a course from Canvas.
+# 3) Navigate to the folder containing this course
+# 4) Place this script inside that folder.
+# 5) Run this script without any commands to get an overview.
+
+
+
+# argument array
+ARGS=("$@")
+LEN=${#ARGS[@]}
+
+function print_help {
+	printf "Usage: palette [Options]\n\n"
+	printf "Options:\n"
+	printf "\t--retrieve\n"
+	printf "\t--submitted <assignment_folder>\n"
+	printf "\t--missing\n"
+	exit 0
+}
+
+function no_list {
+	echo "Error - found no list of all students,"
+	echo "try running with the '--retrieve' flag first."
+	exit 0
+}
+
+function no_submitted {
+	echo "Error - found no list of all student submissions,"
+	echo "try running with the '--submitted' flag first."
+	exit 0
+}
+
+# retrieve list of all students on the course
+function get_list {
+	if [ -e all.txt ]; then
+		rm all.txt
+	fi
+	cat students/.staffeli.yml | grep 'kuid\|short_name' | \
+	perl -0777 -pe 's/\n  short_name:/, name:/g' | \
+	perl -pe 's/^  //g' >> all.txt
+	echo "list of all students saved as 'all.txt'"
+}
+
+# retrieve list of all students who have submitted
+function get_submitted {
+	if [[ $LEN -ne 2 ]]; then
+		echo "You must provide a folder name for the assignment, e.g."
+		printf "\tscript --submitted 'subs/<assignment>'\n"
+		exit 0
+	fi
+	if [ ! -e all.txt ];
+	then
+		no_list
+	fi
+	if [ ! -e "${ARGS[1]}" ]; then
+		echo "The provided assignments folder does not exist."
+		exit 0
+	fi
+	ls "${ARGS[1]}" | cut -d'_' -f1 | sort | uniq > submitted.txt
+	echo "list of all students who have submitted saved as 'submitted.txt'"
+}
+
+# retrieve list of all students who have not submitted
+function find_missing {
+	if [ ! -e all.txt ]; then
+		no_list
+	fi
+	if [ ! -e submitted.txt ]; then
+		no_submitted
+	fi
+	if [ -e missing.txt ]; then
+		rm missing.txt
+	fi
+	cat all.txt | while read line
+		do
+			kuid=$(echo "$line" | cut -d' ' -f2 | perl -pe 's/,//g')
+			if grep  $kuid "submitted.txt" ;
+			then
+				echo "submitted"
+			else
+				echo "NOT"
+				echo $line >> missing.txt
+			fi
+	done
+	echo "list of all students who have not submitted saved as 'missing.txt'"
+}
+
+
+#
+#
+# entry point
+if [[ $LEN == 0 ]]; then
+	print_help
+fi
+
+case ${ARGS[0]} in
+	--retrieve) get_list;;
+	--submitted) get_submitted;;
+	--missing) find_missing;;
+	--help) print_help;;
+	*) echo "Invalid argument. Try 'script --help' for a list of commands."
+esac
+
+# EOF
