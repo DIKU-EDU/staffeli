@@ -38,6 +38,8 @@ Canvas. Brace yourself. Lend a hand.
    [download](https://github.com/DIKU-EDU/staffeli/archive/master.zip) this
    repository.
 2. `pip3 install .`
+3. Copy the downloaded folder "staffeli" to the python module directory
+(to find this directory - open a python interpreter > `import os` > `os.__file__`)
 
 ## Getting Started
 
