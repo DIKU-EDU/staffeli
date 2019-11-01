@@ -197,6 +197,41 @@ class GroupCategoryList(cachable.CachableEntity):
         json = copy.deepcopy(self.json)
         return { 'group_categories': json }
 
+class SectionList:
+    def __init__(self, course, id=None):
+        self.canvas = course.canvas
+
+        entities = {}
+        if id is not None:
+            self.id = id
+        else:
+            entities = self.canvas.list_sections(course.id)
+            self.json = entities
+
+        sectmap = {}
+        sections = []
+        for ent in entities:
+            name = ent['name']
+            sections.append(name)
+            students = ent['students']
+            for student in students:
+                key = int(student['id'])
+                if key in sectmap:
+                    sectmap[key].append(name)
+                else:
+                    sectmap[int(student['id'])] = [name]
+        self._sectmap = sectmap
+        self._sections = sections
+
+    def sections(self):
+        """Return a list sections in course."""
+        return self._sections
+
+    def sectmap(self):
+        """Return a map between userIDs and section names."""
+        return self._sectmap
+
+
 class Course(listed.ListedEntity, cachable.CachableEntity):
     def __init__(self, canvas = None, name = None, id = None):
 
