@@ -87,7 +87,7 @@ We recommend that you create a local directory ``canvas``, ``absalon``,
 or similar, for all of you Canvas-related local course clones. Staffeli
 needs some initial help to be able to login with your credentials. You
 need to `generate a
-token <https://guides.instructure.com/m/4214/l/40399-how-do-i-obtain-an-api-access-token-for-an-account>`__
+token <https://guides.instructure.com/m/67952/l/1018197-how-do-i-manage-api-access-tokens-in-my-user-account>`__
 for Staffeli to use, and save it as ``.token``, ``token``, or
 ``token.txt`` in this high-level directory.
 
