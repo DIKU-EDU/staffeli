@@ -237,6 +237,46 @@ def split_according_to_groups(course, subspath, path):
                 tgt = os.path.join(namepath, dirname)
                 shutil.copytree(src, tgt, symlinks=True)
 
+
+def split_by_section(c, name, subspath, path):
+    """Split assignments by section of submitting student."""
+    if not os.path.isdir(subspath):
+        raise LookupError("Submission path %s does not exist" % subspath)
+
+    name = slugify(name)
+    splitbase = os.path.join(path, name)
+    subbase = os.path.join(subspath, name)
+
+    if os.path.exists(splitbase):
+        raise Exception("Split target directory %s already exists."
+                        % splitbase)
+    splitbase = os.path.abspath(splitbase)
+
+    if not os.path.exists(subbase):
+        raise Exception("Submission directory %s not found." % subbase)
+    subbase = os.path.abspath(subbase)
+
+    sections = canvas.SectionList(c)
+    students = canvas.StudentList(searchdir="students")
+
+    # Create folders for each section
+    mkdir(path)
+    mkdir(splitbase)
+    for sec in sections.sections():
+        d = os.path.join(splitbase, sec)
+        mkdir(d)
+
+    # Symlink folders from submission directory to destination
+    for uid, namelist in sections.sectmap().items():
+        dirname = student_dirname(students[uid])
+        subpath = os.path.join(subbase, dirname)
+        for name in namelist:
+            splitpath = os.path.join(splitbase, os.path.join(name, dirname))
+            if not os.path.isdir(subpath):
+                continue
+            os.symlink(subpath, splitpath)
+
+
 def main_args_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
@@ -270,6 +310,14 @@ Grade a submission:
         [-1]            Only upload feedback for 1 student id (instead of all).
         [--kuid KUID]   Upload feedback for a specific student.
         [FILEPATH]...   Optional files to upload alongside.
+
+Split submissions by sections:
+    sectsplit ASSIGNMENT_NAME SUBDIR SPLITDIR
+
+    Where
+        ASSIGNMENT_NAME Name of assignment that should be split.
+        SUBDIR          Name of directory holding submissions to split.
+        SPLITDIR        Name of directory that splits should be symlinked into.
 
 Work with groups:
     group add group GROUP_CATEGORY GROUP_NAME
@@ -477,6 +525,13 @@ def find_user(user_name):
 def groupsplit(args):
     split_according_to_groups(canvas.Course(), args[0], args[1])
 
+
+def sectsplit(name, subs=None, splits=None):
+    """Split submissions according to sections."""
+    subs = subs if subs else "subs"
+    splits = splits if splits else "splits"
+    split_by_section(canvas.Course(), name, subs, splits)
+
 def _check_grade(grade):
     goodgrades = ["pass", "fail", "incomplete"]
     if not grade in goodgrades:
@@ -582,6 +637,8 @@ def main():
         user(remargs)
     elif action == "groupsplit":
         groupsplit(remargs)
+    elif action == "sectsplit":
+        sectsplit(*remargs)
     else:
         print("Unknown action {}.".format(action))
         parser.print_usage()
